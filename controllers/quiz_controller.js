@@ -173,6 +173,37 @@ exports.play = function (req, res, next) {
     });
 };
 
+// GET /quizzes/randomplay
+exports.practica52 = function (req, res, next) {
+
+    var quizzes = models.Quiz.findAll();
+    var score = req.session.score || 0;
+    req.session.quiz.id;
+    req.session.practica52.resolved = [];
+    models.Quiz.count()
+        .then(function (count) {
+
+            var findOptions;
+            var used = req.session.practica52.resolved.length ? req.session.practica52.resolved :[-1];
+            var whereOpt = {'id' : {$notIn:used}};
+
+            findOptions.offset = 0;
+
+            return models.Quiz.findAll(findOptions)
+
+        })
+
+
+
+    var answer = req.query.answer || '';
+
+    res.render('quizzes/random_play.ejs', {
+        quiz: req.quiz,
+        answer: answer,
+        score: score
+    });
+
+};
 
 // GET /quizzes/:quizId/check
 exports.check = function (req, res, next) {
