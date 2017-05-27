@@ -176,75 +176,66 @@ exports.play = function (req, res, next) {
 var score = 0;
 exports.practica52 = function (req, res, next) {
 
-    var answer = req.query.answer || ''
+    var answer = req.query.answer || '';
 
     if(!req.session.practica52){
         req.session.practica52 = {qc:[-1]};
     }
 
     //var used = req.session.practica52.qc.length ? req.session.practica52.qc :[-1];
-    var whereOpt = {id: {$notIn: req.session.practica52.qc}};
+    var whereOpt = {'id': {$notIn: req.session.practica52.qc}};
 
-    models.Quiz.count(whereOpt)
+    models.Quiz.count({where:whereOpt})
         .then(function (count) {
-            rand = Math.floor(Math.random() * (count));
-            return models.Quiz.findAll({limit:1, offset:rand})
+            var rand = Math.floor(Math.random() * (count - 0));
+            return models.Quiz.findAll({where:whereOpt, limit:1, offset: rand })
                 .then(function (quizzes) {
-                    if (quizzes.length == 0){
-                        res.render('quizes/random_nomore', {
-                            score: score -1
+                    if (!quizzes.length){
+                        req.session.practica52 = {qc:[-1]};
+                        res.render('quizzes/random_nomore', {
+                            score: score
                         });
                     } else {
                         var q = quizzes [0];
+                        req.session.practica52.qc.push(q.id);
                         res.render('quizzes/random_play', {
                             quiz: q,
                             answer: answer,
                             score: score
                         });
                     }
-
-                    //question = quizzes[rand];
-                    //id = quiz[rand].id;
-                    //req.session.qc.push(question);
-
-
                 });
-
         });
-
 };
 
 // GET /quizzes/randomcheck/:quizId
-exports.randomcheck = function (req, res, next) {
+exports.comprueba = function (req, res, next) {
 
     var answer = req.query.answer || "";
-
     var result = answer.toLowerCase().trim() === req.quiz.answer.toLowerCase().trim();
 
     if(result) {
         score = score + 1;
-        models.Quiz.count()
-            .then(function (count) {
-                if (score === count) {
-                    res.render('quizzes/random_nomore', {
-                        score: score
-                    });
-                    score = 0;
-
-                } else {
-                    res.render('quizzes/random_result', {
-                        quiz: req.quiz,
-                        result: result,
-                        score: score,
-                        answer: answer
-                    });
-                    if (!result) {
-                        score = 0;
-                    }
-                }
-
-            });
     }
+    models.Quiz.count()
+        .then(function (count) {
+            if (score === count) {
+                res.render('quizzes/random_nomore', {
+                    score: score
+                });
+                score = 0;
+            } else {
+                res.render('quizzes/random_result', {
+                    quiz: req.quiz,
+                    result: result,
+                    score: score,
+                    answer: answer
+                });
+                if (!result) {
+                    score = 0;
+                }
+            }
+        });
 };
 
 // GET /quizzes/:quizId/check
