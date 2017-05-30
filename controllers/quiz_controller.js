@@ -196,7 +196,6 @@ exports.destroy = function (req, res, next) {
     });
 };
 
-
 // GET /quizzes/:quizId/play
 exports.play = function (req, res, next) {
 
@@ -208,6 +207,71 @@ exports.play = function (req, res, next) {
     });
 };
 
+// GET /quizzes/randomplay
+var score = 0;
+exports.practica52 = function (req, res, next) {
+
+    var answer = req.query.answer || '';
+
+    if(!req.session.practica52){
+        req.session.practica52 = {qc:[-1]};
+    }
+
+    //var used = req.session.practica52.qc.length ? req.session.practica52.qc :[-1];
+    var whereOpt = {'id': {$notIn: req.session.practica52.qc}};
+
+    models.Quiz.count({where:whereOpt})
+        .then(function (count) {
+            var rand = Math.floor(Math.random() * (count - 0));
+            return models.Quiz.findAll({where:whereOpt, limit:1, offset: rand })
+                .then(function (quizzes) {
+                    if (!quizzes.length){
+                        req.session.practica52 = {qc:[-1]};
+                        res.render('quizzes/random_nomore', {
+                            score: score
+                        });
+                    } else {
+                        var q = quizzes [0];
+                        req.session.practica52.qc.push(q.id);
+                        res.render('quizzes/random_play', {
+                            quiz: q,
+                            answer: answer,
+                            score: score
+                        });
+                    }
+                });
+        });
+};
+
+// GET /quizzes/randomcheck/:quizId
+exports.comprueba = function (req, res, next) {
+
+    var answer = req.query.answer || "";
+    var result = answer.toLowerCase().trim() === req.quiz.answer.toLowerCase().trim();
+
+    if(result) {
+        score = score + 1;
+    }
+    models.Quiz.count()
+        .then(function (count) {
+            if (score === count) {
+                res.render('quizzes/random_nomore', {
+                    score: score
+                });
+                score = 0;
+            } else {
+                res.render('quizzes/random_result', {
+                    quiz: req.quiz,
+                    result: result,
+                    score: score,
+                    answer: answer
+                });
+                if (!result) {
+                    score = 0;
+                }
+            }
+        });
+};
 
 // GET /quizzes/:quizId/check
 exports.check = function (req, res, next) {
